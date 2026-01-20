@@ -1,0 +1,10 @@
+image: node:20
+
+stages:
+  - verify
+
+verify:
+  stage: verify
+  script:
+    - node -v
+    - npm -v
