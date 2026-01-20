@@ -1,21 +1,106 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Asset } from 'expo-asset';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import MapLibreGL from '@maplibre/maplibre-react-native';
+import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 export default function App() {
+  const [mbtilesPath, setMbtilesPath] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const prepareTiles = async () => {
+      const asset = Asset.fromModule(
+        require('./assets/RegionMaps/bucegi.mbtiles')
+      );
+      await asset.downloadAsync();
+
+      const targetPath = `${FileSystem.documentDirectory}bucegi.mbtiles`;
+      const targetInfo = await FileSystem.getInfoAsync(targetPath);
+
+      if (!targetInfo.exists) {
+        if (!asset.localUri) {
+          throw new Error('Bucegi MBTiles asset is missing a local URI.');
+        }
+        await FileSystem.copyAsync({ from: asset.localUri, to: targetPath });
+      }
+
+      if (isMounted) {
+        setMbtilesPath(targetPath);
+      }
+    };
+
+    prepareTiles();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const mapStyle = useMemo(() => {
+    if (!mbtilesPath) {
+      return null;
+    }
+
+    const normalizedPath = mbtilesPath.startsWith('file://')
+      ? mbtilesPath.replace('file://', '')
+      : mbtilesPath;
+
+    return {
+      version: 8,
+      sources: {
+        bucegi: {
+          type: 'raster',
+          tiles: [`mbtiles://${normalizedPath}`],
+          tileSize: 256,
+        },
+      },
+      layers: [
+        {
+          id: 'bucegi',
+          type: 'raster',
+          source: 'bucegi',
+        },
+      ],
+    };
+  }, [mbtilesPath]);
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} testID="app-root">
       <View style={styles.header}>
-        <Text style={styles.title}>Trailwaze</Text>
+        <Text style={styles.title} testID="app-title">
+          Trailwaze
+        </Text>
         <Text style={styles.subtitle}>Offline-first hiking reports</Text>
       </View>
 
-      <View style={styles.mapPlaceholder}>
-        <Text style={styles.mapText}>Offline map placeholder</Text>
-        <Text style={styles.mapSubtext}>MapLibre + MBTiles will live here</Text>
+      <View style={styles.mapPlaceholder} testID="map-placeholder">
+        {mapStyle ? (
+          <MapLibreGL.MapView
+            style={styles.map}
+            mapStyle={mapStyle}
+            compassEnabled
+            logoEnabled={false}
+            attributionEnabled={false}
+          >
+            <MapLibreGL.Camera
+              zoomLevel={12}
+              centerCoordinate={[25.43, 45.4]}
+            />
+          </MapLibreGL.MapView>
+        ) : (
+          <View style={styles.mapLoading}>
+            <ActivityIndicator color="#f2b155" />
+            <Text style={styles.mapText}>Preparing offline map...</Text>
+            <Text style={styles.mapSubtext}>Copying MBTiles to device</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.actions}>
-        <View style={styles.reportButton}>
+        <View style={styles.reportButton} testID="report-button">
           <Text style={styles.reportText}>Raporteaza</Text>
         </View>
         <Text style={styles.hint}>
@@ -55,6 +140,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#355e57',
     backgroundColor: '#142624',
+    overflow: 'hidden',
+  },
+  map: {
+    flex: 1,
+  },
+  mapLoading: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
