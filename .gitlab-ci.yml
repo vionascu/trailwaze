@@ -22,3 +22,10 @@ automation_tests:
     - cd apps/mobile
     - npm install
     - npm test
+
+ui_smoke_tests:
+  stage: test
+  script:
+    - cd apps/mobile
+    - npm install
+    - npm test -- --runTestsByPath __tests__/mvp-epics.test.js
