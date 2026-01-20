@@ -2,9 +2,23 @@ image: node:20
 
 stages:
   - verify
+  - test
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - apps/mobile/node_modules/
+    - apps/mobile/package-lock.json
 
 verify:
   stage: verify
   script:
     - node -v
     - npm -v
+
+automation_tests:
+  stage: test
+  script:
+    - cd apps/mobile
+    - npm install
+    - npm test
