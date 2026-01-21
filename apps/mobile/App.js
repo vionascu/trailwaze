@@ -2,19 +2,32 @@ import { useEffect, useMemo, useState } from 'react';
 import { Asset } from 'expo-asset';
 import { StatusBar } from 'expo-status-bar';
 import * as FileSystem from 'expo-file-system';
+import * as Location from 'expo-location';
 import MapLibreGL from '@maplibre/maplibre-react-native';
-import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import mbtilesAsset from './mbtiles';
 
 export default function App() {
+  const isWeb = Platform.OS === 'web';
   const [mbtilesPath, setMbtilesPath] = useState(null);
+  const [locationDenied, setLocationDenied] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
     const prepareTiles = async () => {
-      const asset = Asset.fromModule(
-        require('./assets/RegionMaps/bucegi.mbtiles')
-      );
+      if (isWeb || !mbtilesAsset) {
+        return;
+      }
+
+      const asset = Asset.fromModule(mbtilesAsset);
       await asset.downloadAsync();
 
       const targetPath = `${FileSystem.documentDirectory}bucegi.mbtiles`;
@@ -37,7 +50,28 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isWeb]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const requestLocation = async () => {
+      if (isWeb) {
+        return;
+      }
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (isMounted) {
+        setLocationDenied(status !== 'granted');
+      }
+    };
+
+    requestLocation();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isWeb]);
 
   const mapStyle = useMemo(() => {
     if (!mbtilesPath) {
@@ -77,7 +111,14 @@ export default function App() {
       </View>
 
       <View style={styles.mapPlaceholder} testID="map-placeholder">
-        {mapStyle ? (
+        {isWeb ? (
+          <View style={styles.mapLoading}>
+            <Text style={styles.mapText}>Offline map preview</Text>
+            <Text style={styles.mapSubtext}>
+              MapLibre MBTiles rendering is available on iOS/Android builds.
+            </Text>
+          </View>
+        ) : mapStyle ? (
           <MapLibreGL.MapView
             style={styles.map}
             mapStyle={mapStyle}
@@ -89,6 +130,7 @@ export default function App() {
               zoomLevel={12}
               centerCoordinate={[25.43, 45.4]}
             />
+            <MapLibreGL.UserLocation visible />
           </MapLibreGL.MapView>
         ) : (
           <View style={styles.mapLoading}>
@@ -98,6 +140,12 @@ export default function App() {
           </View>
         )}
       </View>
+
+      {locationDenied ? (
+        <Text style={styles.permissionHint}>
+          Location permission is needed to show your GPS dot.
+        </Text>
+      ) : null}
 
       <View style={styles.actions}>
         <View style={styles.reportButton} testID="report-button">
@@ -181,5 +229,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 12,
     textAlign: 'center',
+  },
+  permissionHint: {
+    color: '#f2b155',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    textAlign: 'center',
+    fontSize: 12,
   },
 });

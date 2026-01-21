@@ -9,13 +9,34 @@ Offline-first hiking navigation inspired by Waze.
 - Mobile app (Expo / React Native): `apps/mobile`
 - Product epics and stories: `docs/mvp-epics.md`
 
-## Mobile app setup
+## Web quickstart (step-by-step)
+
+```bash
+cd apps/mobile
+npm install
+npx expo start --web
+```
+
+1) Open the URL shown in the terminal.
+2) You should see the map with hiking trails highlighted.
+3) Click "Raporteaza", pick a report type, then click the map to drop a pin.
+
+## Run the app (native)
 
 ```bash
 cd apps/mobile
 npm install
 npx expo start
 ```
+
+## Reporting guide (web)
+
+1) Click "Raporteaza".
+2) Choose a report type (Urs, Copac cazut, Grohotis, Cabana full).
+3) Click the map where the issue is located.
+4) A pin appears with the report type initial.
+
+Reports are stored in memory during the session.
 
 ## Tests
 

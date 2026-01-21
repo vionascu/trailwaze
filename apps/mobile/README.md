@@ -11,6 +11,23 @@ npm install
 npx expo start
 ```
 
+## Web usage
+
+```bash
+npx expo start --web
+```
+
+The web interface uses OpenStreetMap tiles with a hiking trails overlay.
+
+### Reporting guide (step-by-step)
+
+1) Click "Raporteaza".
+2) Choose a report type.
+3) Click the map to place a pin.
+4) Repeat to add more reports.
+
+Pins are stored in memory for the current session.
+
 ## Tests
 
 ```bash
@@ -42,3 +59,6 @@ Zooms: `10-16`
 
 The app loads this MBTiles file into the device file system on startup and
 renders it with MapLibre.
+
+Note: MBTiles rendering requires native iOS/Android builds. The web build uses
+online tiles instead.
