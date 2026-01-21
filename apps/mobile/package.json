@@ -20,6 +20,7 @@
     "expo-file-system": "~19.0.21",
     "expo-location": "~19.0.8",
     "expo-status-bar": "~3.0.9",
+    "maplibre-gl": "^5.7.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
@@ -32,7 +33,10 @@
     "react-test-renderer": "19.1.0"
   },
   "jest": {
-    "preset": "jest-expo"
+    "testEnvironment": "jsdom",
+    "testMatch": ["**/__tests__/**/*.test.js"],
+    "moduleFileExtensions": ["js", "json"],
+    "transform": {}
   },
   "detox": {
     "testRunner": "jest",

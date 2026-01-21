@@ -3,9 +3,9 @@ import { Asset } from 'expo-asset';
 import { StatusBar } from 'expo-status-bar';
 import * as FileSystem from 'expo-file-system';
 import * as Location from 'expo-location';
-import MapLibreGL from '@maplibre/maplibre-react-native';
 import {
   ActivityIndicator,
+  Pressable,
   Platform,
   SafeAreaView,
   StyleSheet,
@@ -13,11 +13,29 @@ import {
   View,
 } from 'react-native';
 import mbtilesAsset from './mbtiles';
+import WebMap from './WebMap';
+
+const MapLibreGL =
+  Platform.OS === 'web'
+    ? null
+    : require('@maplibre/maplibre-react-native').default ||
+      require('@maplibre/maplibre-react-native');
+
+const REPORT_TYPES = [
+  { key: 'bear', label: 'Urs' },
+  { key: 'fallen-tree', label: 'Copac cazut' },
+  { key: 'grohotis', label: 'Grohotis' },
+  { key: 'cabana-full', label: 'Cabana full' },
+];
 
 export default function App() {
   const isWeb = Platform.OS === 'web';
   const [mbtilesPath, setMbtilesPath] = useState(null);
   const [locationDenied, setLocationDenied] = useState(false);
+  const [reportMode, setReportMode] = useState(false);
+  const [reportType, setReportType] = useState(null);
+  const [reports, setReports] = useState([]);
+  const [reportHint, setReportHint] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -86,20 +104,91 @@ export default function App() {
       version: 8,
       sources: {
         bucegi: {
-          type: 'raster',
+          type: 'vector',
           tiles: [`mbtiles://${normalizedPath}`],
-          tileSize: 256,
+          minzoom: 10,
+          maxzoom: 16,
         },
       },
       layers: [
         {
-          id: 'bucegi',
-          type: 'raster',
+          id: 'background',
+          type: 'background',
+          paint: {
+            'background-color': '#142624',
+          },
+        },
+        {
+          id: 'bucegi-trails',
+          type: 'line',
           source: 'bucegi',
+          'source-layer': 'bucegi',
+          filter: [
+            'any',
+            ['==', ['get', 'highway'], 'path'],
+            ['==', ['get', 'highway'], 'footway'],
+            ['==', ['get', 'highway'], 'track'],
+            ['==', ['get', 'marked_trail'], 'yes'],
+            ['==', ['get', 'route'], 'hiking'],
+            ['==', ['get', 'mtb'], 'yes'],
+          ],
+          paint: {
+            'line-color': '#f2b155',
+            'line-width': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              10,
+              0.8,
+              12,
+              1.6,
+              14,
+              2.4,
+              16,
+              3.4,
+            ],
+            'line-opacity': 0.9,
+          },
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+          },
         },
       ],
     };
   }, [mbtilesPath]);
+
+  const handleReportPress = () => {
+    setReportHint('');
+    setReportMode(true);
+    setReportType(null);
+  };
+
+  const handleMapPress = (event) => {
+    if (!reportMode || !reportType) {
+      return;
+    }
+
+    const coordinates =
+      event?.geometry?.coordinates || event?.coordinates || null;
+    if (!coordinates || coordinates.length < 2) {
+      return;
+    }
+
+    const typeLabel =
+      REPORT_TYPES.find((item) => item.key === reportType)?.label || reportType;
+    const report = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      type: reportType,
+      label: typeLabel,
+      coordinate: coordinates,
+    };
+
+    setReports((prev) => [...prev, report]);
+    setReportMode(false);
+    setReportType(null);
+    setReportHint(`Raport adaugat: ${typeLabel}.`);
+  };
 
   return (
     <SafeAreaView style={styles.container} testID="app-root">
@@ -112,25 +201,39 @@ export default function App() {
 
       <View style={styles.mapPlaceholder} testID="map-placeholder">
         {isWeb ? (
-          <View style={styles.mapLoading}>
-            <Text style={styles.mapText}>Offline map preview</Text>
-            <Text style={styles.mapSubtext}>
-              MapLibre MBTiles rendering is available on iOS/Android builds.
-            </Text>
-          </View>
-        ) : mapStyle ? (
+          <WebMap
+            style={styles.map}
+            onMapPress={handleMapPress}
+            reports={reports}
+            reportMode={reportMode && !!reportType}
+          />
+        ) : mapStyle && MapLibreGL ? (
           <MapLibreGL.MapView
             style={styles.map}
             mapStyle={mapStyle}
             compassEnabled
             logoEnabled={false}
             attributionEnabled={false}
+            onPress={handleMapPress}
           >
             <MapLibreGL.Camera
               zoomLevel={12}
               centerCoordinate={[25.43, 45.4]}
             />
             <MapLibreGL.UserLocation visible />
+            {reports.map((report) => (
+              <MapLibreGL.PointAnnotation
+                key={report.id}
+                id={report.id}
+                coordinate={report.coordinate}
+              >
+                <View style={styles.reportPin}>
+                  <Text style={styles.reportPinText}>
+                    {report.label.slice(0, 1).toUpperCase()}
+                  </Text>
+                </View>
+              </MapLibreGL.PointAnnotation>
+            ))}
           </MapLibreGL.MapView>
         ) : (
           <View style={styles.mapLoading}>
@@ -148,11 +251,59 @@ export default function App() {
       ) : null}
 
       <View style={styles.actions}>
-        <View style={styles.reportButton} testID="report-button">
-          <Text style={styles.reportText}>Raporteaza</Text>
-        </View>
+        {reportMode ? (
+          <View style={styles.reportPanel}>
+            <Text style={styles.reportPanelTitle}>Alege tipul raportului</Text>
+            <View style={styles.reportOptions}>
+              {REPORT_TYPES.map((item) => (
+                <Pressable
+                  key={item.key}
+                  onPress={() => setReportType(item.key)}
+                  style={[
+                    styles.reportOption,
+                    reportType === item.key && styles.reportOptionActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.reportOptionText,
+                      reportType === item.key && styles.reportOptionTextActive,
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={styles.reportInstruction}>
+              {reportType
+                ? 'Atinge harta pentru a pune pinul.'
+                : 'Alege tipul si apoi atinge harta.'}
+            </Text>
+            <Pressable
+              onPress={() => {
+                setReportMode(false);
+                setReportType(null);
+              }}
+              style={styles.reportCancel}
+            >
+              <Text style={styles.reportCancelText}>Anuleaza</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            style={styles.reportButton}
+            onPress={handleReportPress}
+            testID="report-button"
+          >
+            <Text style={styles.reportText}>Raporteaza</Text>
+          </Pressable>
+        )}
+        {reportHint ? (
+          <Text style={styles.reportHint}>{reportHint}</Text>
+        ) : null}
         <Text style={styles.hint}>
-          Tipuri: urs, gheata, copac cazut, grohotis, cabana full
+          Tipuri: urs, copac cazut, grohotis, cabana full
         </Text>
       </View>
       <StatusBar style="auto" />
@@ -223,6 +374,79 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  reportPanel: {
+    backgroundColor: '#11201e',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#355e57',
+  },
+  reportPanelTitle: {
+    color: '#f5f3e9',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  reportOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  reportOption: {
+    borderWidth: 1,
+    borderColor: '#355e57',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: '#0f1c1a',
+  },
+  reportOptionActive: {
+    backgroundColor: '#f2b155',
+    borderColor: '#f2b155',
+  },
+  reportOptionText: {
+    color: '#c6d4cf',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  reportOptionTextActive: {
+    color: '#1b1b1b',
+  },
+  reportInstruction: {
+    color: '#9cb0aa',
+    fontSize: 12,
+    marginTop: 10,
+  },
+  reportCancel: {
+    alignSelf: 'flex-start',
+    marginTop: 12,
+  },
+  reportCancelText: {
+    color: '#f2b155',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  reportHint: {
+    color: '#f2b155',
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  reportPin: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#f2b155',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#1b1b1b',
+  },
+  reportPinText: {
+    color: '#1b1b1b',
+    fontSize: 12,
+    fontWeight: '700',
   },
   hint: {
     color: '#9cb0aa',
