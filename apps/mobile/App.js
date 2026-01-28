@@ -22,10 +22,10 @@ const MapLibreGL =
       require('@maplibre/maplibre-react-native');
 
 const REPORT_TYPES = [
-  { key: 'bear', label: 'Urs' },
-  { key: 'fallen-tree', label: 'Copac cazut' },
-  { key: 'grohotis', label: 'Grohotis' },
-  { key: 'cabana-full', label: 'Cabana full' },
+  { key: 'bear', label: '🐻 Bear' },
+  { key: 'fallen-tree', label: '🌲 Fallen tree' },
+  { key: 'grohotis', label: '🪨 Scree' },
+  { key: 'cabana-full', label: '🏔️ Hut full' },
 ];
 
 export default function App() {
@@ -187,7 +187,7 @@ export default function App() {
     setReports((prev) => [...prev, report]);
     setReportMode(false);
     setReportType(null);
-    setReportHint(`Raport adaugat: ${typeLabel}.`);
+    setReportHint(`✅ Report added: ${typeLabel}.`);
   };
 
   return (
@@ -253,7 +253,7 @@ export default function App() {
       <View style={styles.actions}>
         {reportMode ? (
           <View style={styles.reportPanel}>
-            <Text style={styles.reportPanelTitle}>Alege tipul raportului</Text>
+            <Text style={styles.reportPanelTitle}>📋 Choose report type</Text>
             <View style={styles.reportOptions}>
               {REPORT_TYPES.map((item) => (
                 <Pressable
@@ -277,8 +277,8 @@ export default function App() {
             </View>
             <Text style={styles.reportInstruction}>
               {reportType
-                ? 'Atinge harta pentru a pune pinul.'
-                : 'Alege tipul si apoi atinge harta.'}
+                ? '👆 Tap map to place pin'
+                : '✓ Choose type then tap map'}
             </Text>
             <Pressable
               onPress={() => {
@@ -287,7 +287,7 @@ export default function App() {
               }}
               style={styles.reportCancel}
             >
-              <Text style={styles.reportCancelText}>Anuleaza</Text>
+              <Text style={styles.reportCancelText}>✕ Cancel</Text>
             </Pressable>
           </View>
         ) : (
@@ -296,14 +296,14 @@ export default function App() {
             onPress={handleReportPress}
             testID="report-button"
           >
-            <Text style={styles.reportText}>Raporteaza</Text>
+            <Text style={styles.reportText}>📍 Report</Text>
           </Pressable>
         )}
         {reportHint ? (
           <Text style={styles.reportHint}>{reportHint}</Text>
         ) : null}
         <Text style={styles.hint}>
-          Tipuri: urs, copac cazut, grohotis, cabana full
+          🐻 Bear | 🌲 Fallen tree | 🪨 Scree | 🏔️ Hut full
         </Text>
       </View>
       <StatusBar style="auto" />
@@ -364,16 +364,18 @@ const styles = StyleSheet.create({
   },
   reportButton: {
     backgroundColor: '#f2b155',
-    borderRadius: 14,
-    paddingVertical: 14,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     alignItems: 'center',
+    alignSelf: 'center',
+    minWidth: 120,
   },
   reportText: {
     color: '#1b1b1b',
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
   reportPanel: {
     backgroundColor: '#11201e',

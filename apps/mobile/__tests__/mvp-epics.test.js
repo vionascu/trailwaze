@@ -326,14 +326,14 @@ describe('Epic 6: Waze-style reporting without signal', () => {
     it('renders a visible "Report" button', () => {
       // DESCRIPTION: Verify prominent reporting button in app UI
       // COVERAGE: Reporting UI accessibility and discoverability
-      // PREREQUISITE: App must render Romanian "Raporteaza" button
+      // PREREQUISITE: App must render "Report" button with location emoji
       // EXPECTED: Users can quickly access report creation interface
       const path = require('path');
       const fs = require('fs');
       const appPath = path.join(__dirname, '../App.js');
       const content = fs.readFileSync(appPath, 'utf-8');
 
-      expect(content).toContain('Raporteaza');
+      expect(content).toContain('Report');
     });
 
     it('auto-captures coordinates and time for a report', () => {
@@ -354,17 +354,17 @@ describe('Epic 6: Waze-style reporting without signal', () => {
     it('offers bear, ice, fallen tree, scree, hut full as types', () => {
       // DESCRIPTION: Verify all danger types are available for reporting
       // COVERAGE: Complete report type taxonomy
-      // PREREQUISITE: App must support 5 report types in Romanian
-      // EXPECTED: Users can report Urs, Copac cazut, Grohotis, Cabana full, plus ice
+      // PREREQUISITE: App must support 5 report types with emoticons
+      // EXPECTED: Users can report Bear, Fallen tree, Scree, Hut full with emoji icons
       const path = require('path');
       const fs = require('fs');
       const appPath = path.join(__dirname, '../App.js');
       const content = fs.readFileSync(appPath, 'utf-8');
 
-      expect(content).toContain('Urs'); // bear
-      expect(content).toContain('Copac cazut'); // fallen tree
-      expect(content).toContain('Grohotis');
-      expect(content).toContain('Cabana full'); // hut full
+      expect(content).toContain('Bear'); // 🐻
+      expect(content).toContain('Fallen tree'); // 🌲
+      expect(content).toContain('Scree'); // 🪨
+      expect(content).toContain('Hut full'); // 🏔️
     });
 
     it('saves the selected type in the report', () => {
