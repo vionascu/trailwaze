@@ -40,7 +40,9 @@
     "testMatch": ["**/__tests__/**/*.test.js"],
     "moduleFileExtensions": ["js", "json"],
     "transform": {},
-    "testRunner": "jest-circus/runner"
+    "testRunner": "jest-circus/runner",
+    "coverageProvider": "v8",
+    "collectCoverageFrom": ["**/*.js", "!**/node_modules/**", "!**/coverage/**"]
   },
   "detox": {
     "testRunner": "jest",
